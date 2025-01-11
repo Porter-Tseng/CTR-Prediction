@@ -1,13 +1,13 @@
 import pandas as pd
 import numpy as np
-import pickle
+import joblib
 import os
 import math
 import matplotlib.pyplot as plt
 import seaborn as sns
 import missingno as msno
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 from scipy.stats import skew, boxcox
 
@@ -16,7 +16,7 @@ def RenameandCheckDuplicateandNaN(DataFrame):
     1. 先將欄位名稱統一修改成 '預測目標' 和1, 2, 3依序直到欄位結束 >> 共有40欄位，故最後欄位名稱為39
     """
     DataFrame.columns = ['Predicted']+[str(i) for i in range(1, len(DataFrame.columns))]
-    print('Rename is Finished.')
+    print(f'Rename is Finished.\n')
 
     """
     2. 檢查每個Chunk中是否有重複性資料，若有則刪除重複性資料，並印出計算共有幾筆
@@ -58,7 +58,7 @@ def RemovedColumnOver50(DataFrame):
     移除缺失值大於50%的資料欄位，並且列出移除欄位名稱
     """
     nan_percentage = (DataFrame.isna().sum() / DataFrame.shape[0]*100).sort_values(ascending=False)
-    columns_drop = nan_percentage[nan_percentage>75].index
+    columns_drop = nan_percentage[nan_percentage>50].index
 
     DataFrame.drop(columns=columns_drop, axis=1, inplace=True)
 
@@ -164,16 +164,15 @@ def ImputeNaN(DataFrame):
 
     return DataFrame
 
-def ObjectiveLabelEncoder(DataFrame, save_path='encoder_dict.pkl'):
+def ObjectiveLabelEncoder(DataFrame, save_path='encoder_dict.joblib'):
     """
     原本資料已經被Hashed成32位元資料，除缺失值外，其他轉換成Label
     當dict為空和檔案存在，則讀取dict檔案沿用先前Chunk的數據轉換，保證每個Chunk數值保持一致
     若dict為空，則創建新的字典
     """
     if os.path.exists(save_path) and os.path.getsize(save_path) > 0:
-        with open(save_path, 'rb') as f:
-            encoder_dict = pickle.load(f)
-            print('Success')
+        encoder_dict = joblib.load(save_path)
+        print('Success Load encoder_dict')
     else:
         print('encoder_dict is None')
         encoder_dict = {}
@@ -192,16 +191,19 @@ def ObjectiveLabelEncoder(DataFrame, save_path='encoder_dict.pkl'):
         unknown_label = set(non_missing) - set(encoder.classes_)
         if unknown_label:
             print(f'Unknown Label: {unknown_label}')
-            all_classes = np.unique(np.concatenate((encoder.classes_, list(unknown_label))))
+
+            encoder_classes = list(map(str, encoder.classes_))
+            unknown_label = list(map(str, unknown_label))
+
+            all_classes = np.unique(np.concatenate((encoder_classes, unknown_label)))
             encoder.classes_ = all_classes
         
         encoded_non_missing = encoder.transform(non_missing)
         DataFrame.loc[DataFrame[col].notna(), col] = encoded_non_missing
 
-    with open(save_path, 'wb') as f:
-        pickle.dump(encoder_dict, f)
-    
-    print(f'Pickle Saved\n')
+    joblib.dump(encoder_dict, save_path)   
+
+    print(f'Joblib Saved\n')
 
     return DataFrame
 
@@ -503,10 +505,12 @@ def ObjectiveFunctionPackage(objective_chunk,
 
 def SkewandRemoveOutlier(df_chunk,
                          file_chunk_number,
+                         numerical_col = '13',
+                         objective_col = '14',
                          output_file_name='3.Final'):
 
-    numerical_df = df_chunk.loc[:, 'Predicted':'14']
-    objective_df = df_chunk.loc[:, '15':]
+    numerical_df = df_chunk.loc[:, 'Predicted':numerical_col]
+    objective_df = df_chunk.loc[:, objective_col:]
 
     negative_col = CheckNegativeColumns(numerical_df)
 

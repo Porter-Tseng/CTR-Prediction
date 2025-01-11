@@ -1,8 +1,7 @@
-.txt
-.csv
+*.txt
+*.csv
 .pyc
 .DS_Store
 .ipynb_checkpoints/
-Data/
 myenv
 __pycache__
