@@ -164,16 +164,18 @@ def ImputeNaN(DataFrame):
 
     return DataFrame
 
-def ObjectiveLabelEncoder(DataFrame, encoder_dict=None, save_path='/home/ctr-prediction/Porter - Project/05 - Advertising Challenge - Data Analysis/Data/encoder_dict.pkl'):
+def ObjectiveLabelEncoder(DataFrame, save_path='encoder_dict.pkl'):
     """
     原本資料已經被Hashed成32位元資料，除缺失值外，其他轉換成Label
     當dict為空和檔案存在，則讀取dict檔案沿用先前Chunk的數據轉換，保證每個Chunk數值保持一致
     若dict為空，則創建新的字典
     """
-    if encoder_dict is None and os.path.exists(save_path):
+    if os.path.exists(save_path) and os.path.getsize(save_path) > 0:
         with open(save_path, 'rb') as f:
             encoder_dict = pickle.load(f)
-    elif encoder_dict is None:
+            print('Success')
+    else:
+        print('encoder_dict is None')
         encoder_dict = {}
 
     for col in DataFrame.columns:
