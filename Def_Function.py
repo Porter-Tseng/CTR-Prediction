@@ -190,7 +190,6 @@ def ObjectiveLabelEncoder(DataFrame, save_path='encoder_dict.joblib'):
         
         unknown_label = set(non_missing) - set(encoder.classes_)
         if unknown_label:
-            print(f'Unknown Label: {unknown_label}')
 
             encoder_classes = list(map(str, encoder.classes_))
             unknown_label = list(map(str, unknown_label))
