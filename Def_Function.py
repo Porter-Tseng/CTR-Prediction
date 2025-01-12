@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import joblib
 import os
-import math
 import matplotlib.pyplot as plt
 import seaborn as sns
 import missingno as msno
@@ -370,8 +369,7 @@ def SkewCountingandTransformWithoutHist(DataFrame, excluding):
 
     for col in filtered_df:
         print(f'Procseeing {col}')
-            
-        original_data = DataFrame[col]
+        
         original_skew = skew(DataFrame[col])
         print(f'Original Column {col} Skew: {original_skew:.2f}')
 
@@ -515,13 +513,39 @@ def SkewandRemoveOutlier(df_chunk,
 
     numerical_df = SkewCountingandTransformWithoutHist(numerical_df, negative_col)
 
-    df_chunk = MergeAllTypeofColumns(numerical_df, objective_df)
+    skewed_df_chunk = MergeAllTypeofColumns(numerical_df, objective_df)
 
-    df_chunk = ExtremeRemoveOutlier(df_chunk)
+    df_chunk = ExtremeRemoveOutlier(skewed_df_chunk)
 
     SaveCSV(df_chunk, output_file_name, file_chunk_number)
 
-    return df_chunk
+    return skewed_df_chunk, df_chunk
+
+def ReadandMergeAllChunk(last_chunk_number):
+
+    chunks = []
+
+    for i in range(1, last_chunk_number+1):
+        file_name = f'3.Final Chunk {i}.csv'
+        if os.path.exists(file_name):
+            chunk = pd.read_csv(file_name, sep=',')
+            chunks.append(chunk)
+            print(f'{file_name} is Loaded')
+        else:
+            print(f'{file_name} is not Found')
+
+    merge_df = pd.concat(chunks, ignore_index=True)
+    print('All Chunk is Read and Merged\n')
+
+    return merge_df
+
+def DataFrameStandardScaler(DataFrame):
+
+    scaler = StandardScaler()
+
+    scaler_df = scaler.fit_transform(DataFrame)
+
+    return scaler_df
 
 if __name__ == '__main__':
     print(f'This is Def Function Script')
