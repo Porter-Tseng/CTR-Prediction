@@ -8,7 +8,7 @@ import missingno as msno
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.tree import DecisionTreeClassifier
-from scipy.stats import skew, boxcox
+from scipy.stats import skew, boxcox, pearsonr
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.decomposition import PCA
@@ -44,6 +44,14 @@ def RenameandCheckDuplicateandNaN(DataFrame):
         print(f'Total NaN Value: {NaN_Number}\n')
     else:
         print(f'No NaN Found.\n')
+
+    return DataFrame
+
+def ValueCount(DataFrame):
+
+    for col in DataFrame.columns:
+        print(DataFrame[col].value_counts().sort_values(ascending=False))
+        print('\n')
 
     return DataFrame
 
@@ -129,7 +137,7 @@ def WithoutLabelColumnsHist(DataFrame):
 def CorrHeatMap(DataFrame):
     corr_col = DataFrame.corr()
 
-    plt.figure(figsize=(10, 10))
+    plt.figure(figsize=(30, 30))
     sns.heatmap(corr_col, annot=True, cmap='coolwarm', fmt='.2f')
     plt.title('Correlation Heatmap')
     plt.show()
@@ -153,16 +161,12 @@ def CountStatistic(DataFrame):
 
 def ImputeNaN(DataFrame):
     """
-    填補缺失值，由於資料分佈皆為左偏分佈，若平均值大於中位數則填補中位數，保留分佈型態；反之，填補眾數維持資料型態
+    填補缺失值，由於資料分佈皆為左偏分佈，則填補中位數，保留分佈型態
     """
-    imputer_mode = SimpleImputer(strategy='most_frequent')
     imputer_median = SimpleImputer(strategy='median')
 
     for col in DataFrame.columns:
-        if DataFrame[col].mean() > DataFrame[col].median():
-            DataFrame[[col]] = imputer_median.fit_transform(DataFrame[[col]])
-        else:
-            DataFrame[[col]] = imputer_mode.fit_transform(DataFrame[[col]])
+        DataFrame[[col]] = imputer_median.fit_transform(DataFrame[[col]])
     
     print(f'{DataFrame.isna().sum()}\n')
 
@@ -181,7 +185,9 @@ def ObjectiveLabelEncoder(DataFrame, save_path='encoder_dict.joblib'):
         print('encoder_dict is None')
         encoder_dict = {}
 
-    for col in DataFrame.columns:
+    objective_col = DataFrame.select_dtypes(include='object').columns
+
+    for col in objective_col:
 
         non_missing = DataFrame[col].dropna()
 
@@ -209,6 +215,18 @@ def ObjectiveLabelEncoder(DataFrame, save_path='encoder_dict.joblib'):
     print(f'Joblib Saved\n')
 
     return DataFrame
+
+def PearsonCorrelation(DataFrame):
+
+    x = DataFrame['Predicted']
+    if 'Predicetd' in DataFrame.columns:
+        y = DataFrame.drop(columns=['Predicted'])
+    else:
+        y = DataFrame
+
+    for col in y.columns:
+        correlation_pearson, _ = pearsonr(x, DataFrame[col])
+        print(f'Correlation with {col}: {correlation_pearson:.2f}')
 
 def NaNColumns(DataFrame):
     """
