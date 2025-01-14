@@ -9,6 +9,11 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 from scipy.stats import skew, boxcox
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.decomposition import PCA
+from imblearn.over_sampling import SMOTE
+
 
 def RenameandCheckDuplicateandNaN(DataFrame):
     """
@@ -515,11 +520,9 @@ def SkewandRemoveOutlier(df_chunk,
 
     skewed_df_chunk = MergeAllTypeofColumns(numerical_df, objective_df)
 
-    df_chunk = ExtremeRemoveOutlier(skewed_df_chunk)
+    SaveCSV(skewed_df_chunk, output_file_name, file_chunk_number)
 
-    SaveCSV(df_chunk, output_file_name, file_chunk_number)
-
-    return skewed_df_chunk, df_chunk
+    return skewed_df_chunk
 
 def ReadandMergeAllChunk(last_chunk_number):
 
@@ -539,13 +542,77 @@ def ReadandMergeAllChunk(last_chunk_number):
 
     return merge_df
 
-def DataFrameStandardScaler(DataFrame):
+def DataFrameStandardScaler(DataFrame, exclude_col='Predicted'):
+
+    filtered_df = [col for col in DataFrame.columns if col != exclude_col]
 
     scaler = StandardScaler()
 
-    scaler_df = scaler.fit_transform(DataFrame)
+    scaler_df = scaler.fit_transform(DataFrame[filtered_df])
 
-    return scaler_df
+    standardized_df = pd.DataFrame(scaler_df, columns=filtered_df)
+
+    final_df = pd.concat([DataFrame[exclude_col], standardized_df], axis=1)
+
+    return final_df
+
+def ScatterPlot(DataFrame):
+
+    plt.figure(figsize=(20, 20))
+
+    for i, col in enumerate(DataFrame.columns):
+        if col != 'Predicted':
+            plt.subplot(10, 4, i+1)
+            sns.scatterplot(data=DataFrame, x='Predicted', y=col)
+            plt.title(f'Predicetd vs {col}')
+    
+    plt.tight_layout()
+    plt.show()
+
+def TestTrainSplit(DataFrame, test_size=0.2):
+
+    x = DataFrame.drop(columns=['Predicted'])
+    y = DataFrame['Predicted']
+
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+
+    return x_train, x_test, y_train, y_test
+
+def RandomForestFeature(withoutlabel, label, estimator_list, x_train, y_train):
+
+    plt.figure(figsize=(20, 20))
+    for i, estimator in enumerate(estimator_list):
+        rf_model = RandomForestRegressor(n_estimators=estimator, random_state=42)
+        rf_model.fit(x_train, y_train)
+        rf_importances = rf_model.feature_importances_
+        rf_feature = withoutlabel.columns
+
+        feature_importances = pd.Series(rf_importances, index=rf_feature)
+        top_features = feature_importances.head().index
+
+        print(top_features)
+
+        plt.subplot(10, 4, i+1)
+        plt.barh(rf_feature, rf_importances)
+        plt.title(f'Random Forest {estimator}')
+
+    plt.tight_layout()
+    plt.show()
+
+def PCAFeature(DataFrame, n_components=2):
+
+    pca = PCA(n_components=n_components)
+    pca_result = pca.fit_transform(DataFrame)
+
+    plt.scatter(pca_result[:, 0], pca_result[:, 1], c='blue')
+    plt.title('PCA Visualization')
+    plt.show()
+
+def SMOTEReSample(x_train, y_train, random_state=42):
+
+    resample_x_train, resample_y_train = SMOTE(random_state=random_state).fit_resample(x_train, y_train)
+
+    return resample_x_train, resample_y_train
 
 if __name__ == '__main__':
     print(f'This is Def Function Script')
