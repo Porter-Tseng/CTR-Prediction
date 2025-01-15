@@ -4,16 +4,14 @@ import joblib
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
-import missingno as msno
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn.tree import DecisionTreeClassifier
-from scipy.stats import skew, boxcox, pearsonr
+from scipy.stats import skew, boxcox, pearsonr, pointbiserialr
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.decomposition import PCA
-from imblearn.over_sampling import SMOTE
-
+from sklearn.metrics import log_loss
 
 def RenameandCheckDuplicateandNaN(DataFrame):
     """
@@ -137,7 +135,7 @@ def WithoutLabelColumnsHist(DataFrame):
 def CorrHeatMap(DataFrame):
     corr_col = DataFrame.corr()
 
-    plt.figure(figsize=(30, 30))
+    plt.figure(figsize=(20, 20))
     sns.heatmap(corr_col, annot=True, cmap='coolwarm', fmt='.2f')
     plt.title('Correlation Heatmap')
     plt.show()
@@ -215,18 +213,6 @@ def ObjectiveLabelEncoder(DataFrame, save_path='encoder_dict.joblib'):
     print(f'Joblib Saved\n')
 
     return DataFrame
-
-def PearsonCorrelation(DataFrame):
-
-    x = DataFrame['Predicted']
-    if 'Predicetd' in DataFrame.columns:
-        y = DataFrame.drop(columns=['Predicted'])
-    else:
-        y = DataFrame
-
-    for col in y.columns:
-        correlation_pearson, _ = pearsonr(x, DataFrame[col])
-        print(f'Correlation with {col}: {correlation_pearson:.2f}')
 
 def NaNColumns(DataFrame):
     """
@@ -477,10 +463,17 @@ def ExtremeRemoveOutlier(DataFrame, lower_quantile=0.01, upper_quantile=0.99):
     return DataFrame
 
 def SaveCSV(DataFrame, Dtype, Number):
+
     files_name = f'{Dtype} Chunk {Number}'
     DataFrame.to_csv(f'{Dtype} Chunk {Number}.csv', index=False)
 
     print(f'Saved {files_name}')
+
+def SaveCSVNoChunk(DataFrame, file_name):
+
+    DataFrame.to_csv(f'{file_name}.csv', index=False)
+
+    print(f'Saved {file_name}')
 
 def ReadFileandRenameandLabel(File_name):
 
@@ -530,7 +523,7 @@ def ReadandMergeAllChunk(last_chunk_number):
     chunks = []
 
     for i in range(1, last_chunk_number+1):
-        file_name = f'3.Final Chunk {i}.csv'
+        file_name = f'Data Preprocessing Chunk {i}.csv'
         if os.path.exists(file_name):
             chunk = pd.read_csv(file_name, sep=',')
             chunks.append(chunk)
@@ -543,11 +536,11 @@ def ReadandMergeAllChunk(last_chunk_number):
 
     return merge_df
 
-def DataFrameStandardScaler(DataFrame, exclude_col='Predicted'):
+def DataFrameNormalizeScaler(DataFrame, exclude_col='Predicted'):
 
     filtered_df = [col for col in DataFrame.columns if col != exclude_col]
 
-    scaler = StandardScaler()
+    scaler = MinMaxScaler()
 
     scaler_df = scaler.fit_transform(DataFrame[filtered_df])
 
@@ -575,30 +568,24 @@ def TestTrainSplit(DataFrame, test_size=0.2):
     x = DataFrame.drop(columns=['Predicted'])
     y = DataFrame['Predicted']
 
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42)
 
     return x_train, x_test, y_train, y_test
 
-def RandomForestFeature(withoutlabel, label, estimator_list, x_train, y_train):
+def RandomForestFeature(DataFrame, estimator_list, targeted_col='Predicted'):
 
-    plt.figure(figsize=(20, 20))
-    for i, estimator in enumerate(estimator_list):
-        rf_model = RandomForestRegressor(n_estimators=estimator, random_state=42)
-        rf_model.fit(x_train, y_train)
-        rf_importances = rf_model.feature_importances_
-        rf_feature = withoutlabel.columns
+    x = DataFrame.drop(columns=[targeted_col])
+    y = DataFrame[targeted_col]
+    rf_feature = x.columns
 
-        feature_importances = pd.Series(rf_importances, index=rf_feature)
-        top_features = feature_importances.head().index
+    for estimator in estimator_list:
+        rf_model = RandomForestRegressor(n_estimators=estimator, random_state=42, n_jobs=1)
+        rf_model.fit(x, y)
 
-        print(top_features)
-
-        plt.subplot(10, 4, i+1)
-        plt.barh(rf_feature, rf_importances)
-        plt.title(f'Random Forest {estimator}')
-
-    plt.tight_layout()
-    plt.show()
+        feature_importances = pd.Series(rf_model.feature_importances_, index=rf_feature)
+        top_features = feature_importances.nlargest(10)
+        print(f'\nTop Feature for {estimator} Estimators:')
+        print(top_features.to_string(index=True))
 
 def PCAFeature(DataFrame, n_components=2):
 
@@ -609,11 +596,62 @@ def PCAFeature(DataFrame, n_components=2):
     plt.title('PCA Visualization')
     plt.show()
 
-def SMOTEReSample(x_train, y_train, random_state=42):
+    return pca_result
 
-    resample_x_train, resample_y_train = SMOTE(random_state=random_state).fit_resample(x_train, y_train)
+def PearsonCorrelation(DataFrame):
 
-    return resample_x_train, resample_y_train
+    plt.figure(figsize=(50, 100))
+
+    x = DataFrame['Predicted']
+
+    if 'Predicted' in DataFrame.columns:
+        y = DataFrame.drop(columns=['Predicted'])
+    else:
+        y = DataFrame
+
+    for i, col in enumerate(y.columns):
+
+        correlation_coefficient, _ = pearsonr(x, DataFrame[col])
+        
+        params = np.polyfit(x, DataFrame[col], 1)
+
+        plt.subplot(10, 4, i + 1)
+        plt.scatter(x, DataFrame[col], label='Data', alpha=0.5)
+        plt.plot(x, np.polyval(params, x), color='red', label=f'Fit: {params[0]:.2f}x + {params[1]:.2f}')
+        plt.xlabel('Predicted')
+        plt.ylabel(col)
+        plt.title(f'{col}\nCorrelation = {correlation_coefficient:.2f}')
+        plt.legend()
+        plt.grid(True)
+
+    plt.tight_layout()
+    plt.show()
+
+def PointBiserialandFilter(DataFrame, targeted_col='Predicted', threshold = 0.05):
+
+    x = DataFrame['Predicted']
+
+    if targeted_col in DataFrame.columns:
+        y = DataFrame.drop(columns=[targeted_col])
+    else:
+        y = DataFrame
+
+    filter_col = {}
+
+    for col in y.columns:
+
+        r, p_value = pointbiserialr(x, DataFrame[col])
+
+        print(f'Columns: {col}, Correlation: {r:.2f}, P-value: {p_value:.2f}\n')
+
+        if abs(r) > threshold:
+            filter_col[col] = DataFrame[col]
+
+    filter_df = pd.DataFrame(filter_col)
+
+    result_df = pd.concat([DataFrame[targeted_col], filter_df], axis=1)
+
+    return result_df
 
 if __name__ == '__main__':
     print(f'This is Def Function Script')
