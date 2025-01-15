@@ -249,13 +249,13 @@ def MergeAllTypeofColumns(numerical, objective):
 
     return all_chunk1
 
-def FilterColumns(DataFrame, certain_col):
+def FilterColumns(DataFrame):
     """
     過濾特定欄位或是有缺失值的欄位
     """
     filtered_col = [
         col for col in DataFrame.columns
-        if col != certain_col and DataFrame[col].isna().sum() != 0
+        if DataFrame[col].isna().sum() != 0
     ]
 
     return filtered_col
