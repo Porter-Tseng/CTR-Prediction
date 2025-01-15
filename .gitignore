@@ -3,5 +3,6 @@
 .pyc
 .DS_Store
 .ipynb_checkpoints/
+.joblib
 myenv
 __pycache__
