@@ -482,65 +482,48 @@ def SaveCSV(DataFrame, Dtype, Number):
 
     print(f'Saved {files_name}')
 
-def NumericalFunctionPackage(file_name,
-                             chunk_number,
-                             numerical_file_name='0.FillNan Numerical',
-                             objective_file_name='1.Row Objective'):
+def ReadFileandRenameandLabel(File_name):
 
-    df_chunk = pd.read_csv(file_name, sep=',')
+    df = pd.read_csv(File_name, sep=',')
 
-    df_chunk = RenameandCheckDuplicateandNaN(df_chunk)
+    df = RenameandCheckDuplicateandNaN(df)
 
-    df_chunk = RemovedColumnOver50(df_chunk)
+    df = ObjectiveLabelEncoder(df)
 
-    numerical_chunk, objective_chunk = SeparateNumericalandObjective(df_chunk)
+    return df
 
-    numerical_chunk = ImputeNaN(numerical_chunk)
+def RemovedOver50andNumericalImpute(DataFrame):
 
-    SaveCSV(numerical_chunk, numerical_file_name, chunk_number)
+    DataFrame = RemovedColumnOver50(DataFrame)
 
-    SaveCSV(objective_chunk, objective_file_name, chunk_number)
+    numerical_col, objective_col = SeparateNumericalandObjective(DataFrame)
 
-    return numerical_chunk, objective_chunk
+    numerical_col = ImputeNaN(numerical_col)
 
-def ObjectiveFunctionPackage(objective_chunk,
-                             numerical_chunk,
-                             certain_col,
-                             chunk_number,
-                             output_file_name='2.All FillNan'):
+    objective_missing_col = NaNColumns(objective_col)
 
-    objective_chunk = ObjectiveLabelEncoder(objective_chunk)
+    DataFrame = MergeAllTypeofColumns(numerical_col, objective_col)
 
-    df_chunk = MergeAllTypeofColumns(numerical_chunk, objective_chunk)
+    return DataFrame, objective_missing_col
 
-    filtered_col = FilterColumns(df_chunk, certain_col)
+def DropRowNaNandSkew(DataFrame, chunk_number):
 
-    df_chunk = DropSpecificRowNaN(df_chunk, filtered_col)
+    filtered_col = FilterColumns(DataFrame)
 
-    df_chunk = ModelFillNaN(df_chunk, certain_col)
+    DataFrame = DropSpecificRowNaN(DataFrame, filtered_col)
 
-    SaveCSV(df_chunk, output_file_name, chunk_number)
+    numerical_skew = DataFrame.loc[:, 'Predicted':'13']
+    objective_skew = DataFrame.loc[:, '14':]
 
-    return df_chunk
+    negative_col = CheckNegativeColumns(numerical_skew)
 
-def SkewandRemoveOutlier(df_chunk,
-                         file_chunk_number,
-                         numerical_col = '13',
-                         objective_col = '14',
-                         output_file_name='3.Final'):
+    DataFrame = SkewCountingandTransformWithoutHist(numerical_skew, negative_col)
 
-    numerical_df = df_chunk.loc[:, 'Predicted':numerical_col]
-    objective_df = df_chunk.loc[:, objective_col:]
+    DataFrame = MergeAllTypeofColumns(numerical_skew, objective_skew)
 
-    negative_col = CheckNegativeColumns(numerical_df)
+    SaveCSV(DataFrame, 'Data Preprocessing', chunk_number)
 
-    numerical_df = SkewCountingandTransformWithoutHist(numerical_df, negative_col)
-
-    skewed_df_chunk = MergeAllTypeofColumns(numerical_df, objective_df)
-
-    SaveCSV(skewed_df_chunk, output_file_name, file_chunk_number)
-
-    return skewed_df_chunk
+    return DataFrame
 
 def ReadandMergeAllChunk(last_chunk_number):
 
