@@ -1,14 +1,5 @@
 *.txt
-Base Train DataFrame Chunk1.csv
-Base Train DataFrame Chunk2.csv
-Base Train DataFrame Chunk3.csv
-Base Train DataFrame Chunk4.csv
-Base Train DataFrame Chunk5.csv
-Data Preprocessing Chunk 1.csv
-Data Preprocessing Chunk 2.csv
-Data Preprocessing Chunk 3.csv
-Data Preprocessing Chunk 4.csv
-Data Preprocessing Chunk 5.csv
+*.csv
 .pyc
 .DS_Store
 .ipynb_checkpoints/
