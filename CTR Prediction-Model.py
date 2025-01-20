@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import log_loss, roc_auc_score, precision_score, recall_score, f1_score, roc_curve
+from sklearn.metrics import log_loss, roc_auc_score, precision_score, recall_score, f1_score, roc_curve, accuracy_score
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Dense, Embedding, Flatten, Dropout, concatenate, Lambda, Multiply
 from tensorflow.keras.models import Model
@@ -77,11 +77,7 @@ if __name__ == "__main__":
     x_test_file = '/Users/porter/Desktop/01.Data Science/Porter - Project/05 - Advertising Challenge - Data Analysis/Data/X_test.csv'
     y_test_file = '/Users/porter/Desktop/01.Data Science/Porter - Project/05 - Advertising Challenge - Data Analysis/Data/Y_test.csv'
 
-
-    Numeric_cols = [
-        "1", "3", "4", "5", "6",
-        "7", "10", "11", "13"
-    ]
+    Numeric_cols = ["1", "3", "4", "5", "6", "7", "10", "11", "13"]
 
     df_train, df_test, feature_dict, total_feature = LoadandProcessData(x_train_file, y_train_file, Numeric_cols)
     feature_index, feature_value = PreprocessingData(df_train, feature_dict, Numeric_cols)
@@ -114,7 +110,10 @@ if __name__ == "__main__":
     )
 
     deepfm_model.compile(
-        optimizer=tf.keras.optimizers.get({"class_name": dfm_params['optimizer'], "config": {"learning_rate": dfm_params["learning_rate"]}}),
+        optimizer=tf.keras.optimizers.get({
+            "class_name": dfm_params['optimizer'],
+            "config": {"learning_rate": dfm_params["learning_rate"]}
+        }),
         loss=dfm_params["loss"],
         metrics=dfm_params["metrics"]
     )
@@ -132,12 +131,14 @@ if __name__ == "__main__":
 
     auc = roc_auc_score(test_y, y_pred)
     logloss = log_loss(test_y, y_pred)
+    accuracy = accuracy_score(test_y, y_pred_binary)
     precision = precision_score(test_y, y_pred_binary)
     recall = recall_score(test_y, y_pred_binary)
     f1 = f1_score(test_y, y_pred_binary)
 
     print(f"AUC Score: {auc:.3f}")
     print(f"Log Loss: {logloss:3f}")
+    print(f"Accuracy: {accuracy:.3f}")
     print(f"Precision: {precision:.3f}")
     print(f"Recall: {recall:.3f}")
     print(f"F1 Score: {f1:.3f}")
@@ -149,3 +150,5 @@ if __name__ == "__main__":
     plt.title("ROC Curve")
     plt.legend()
     plt.show()
+
+    deepfm_model.save("deepfm_model.h5")
