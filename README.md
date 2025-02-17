@@ -38,6 +38,6 @@ https://www.kaggle.com/competitions/criteo-display-ad-challenge
     (4).使用PCA、移除異常值
 
 ## Final Result
-Optuna最佳參數：Log Loss：0.4575/AUC：0.7840/Precision：0.6416/Accuracy：0.7882/Recall：0.3349/F1-score：0.4401
+Optuna最佳參數：Log Loss：0.4575；AUC：0.7840；Precision：0.6416；Accuracy：0.7882；Recall：0.3349；F1-score：0.4401
 
-手動調整最佳參數：Log Loss：0.4546/AUC：0.7875/Precision：0.6525/Accuracy：0.7897/Recall：0.3295/F1-score：0.4379
+手動調整最佳參數：Log Loss：0.4546；AUC：0.7875；Precision：0.6525；Accuracy：0.7897；Recall：0.3295；F1-score：0.4379
