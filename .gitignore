@@ -1,0 +1,17 @@
+*.txt
+*.csv
+*.xlsx
+*.png
+*.db
+*.pkl
+.pyc
+.DS_Store
+.ipynb_checkpoints/
+encoder_dict.joblib
+myenv
+__pycache__
+00_Programming Version1/
+00_Programming Version2/
+00_Programming Version3/
+00_Programming Version4/
+Def_Model_Copy.py
