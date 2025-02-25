@@ -20,7 +20,7 @@ https://www.kaggle.com/competitions/criteo-display-ad-challenge
     (2).AUC、ROC  
     (3).Precision、Accuracy、Recall、F1-score  
 
-## EDA and Feature Engineering
+## Feature Engineering
 1.資料前處理：  
     (1).欄位整理：欄位命名、去除重複性資料  
     (2).缺失值處理：  
