@@ -1,5 +1,6 @@
 ## CTR Prediction
 本專案使用DeepFM模型來進行點擊率預測，並透過Optuna超參數調優與KFold交叉驗證，進一步提升模型的最佳性能和泛化能力
+最終Log Loss從0.49降低至0.4546，在比賽中大約38名
 
 ## Data Source
 資料來源：Kaggle: Display Advertising Challenge
